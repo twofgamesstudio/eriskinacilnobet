@@ -88,14 +88,8 @@
 
         // --- Sabitler ve Veriler ---
         
-        // Grup B (Sadece 8-16 tutanlar)
-        const GROUP_B_NAMES = [
-            "PINAR İLÇİN", "ÖZLEM BOZKURT", "NURCAN ÇİFTÇİ", "MERVE POYRAZ", 
-            "CANSU ÖZEN", "BURCU KIYAK", "FATMA KIRTAŞ", "HÜLYA ŞAHİN", "SÜMEYYE KARAKAYA"
-        ];
-
-        // Grup A (Tüm nöbetleri tutanlar)
-        const GROUP_A_NAMES = [
+        // Sadece 24 Saat Tutan Personel Listesi (54 Kişi)
+        const STAFF_NAMES = [
             "ABDURRAHMAN ŞAHİN", "AHMET ALTINTAŞ", "AHMET KAYA", "ALEYNA NUR ÇELİK", "ALİ İHSAN ÖZDEMİR",
             "ARZU BOZBOĞA", "ASENA ALBAYRAK", "AYŞE ÇETİN", "AYŞE SAN", "BURAKHAN KARAKAN",
             "BÜŞRA DEŞAT", "BÜŞRA KESKİN", "CANER KARAMAN", "CEREN CAN EMRE", "CUMALİ ORUÇ",
@@ -109,17 +103,13 @@
             "YASEMİN ERDEM", "YASİN KİRAZ", "YUNUS EMRE YILDIZ", "ZEHRA TEKBIÇAK"
         ];
 
-        // Nöbet Tipleri ve Tanımları
+        // Nöbet Tipleri (Sadece 24 Saatlikler - Toplam 14 Kişi)
         const SHIFT_ROLES = [
-            { code: 'S-24', label: 'Sarı 24h', count: 4, hours: 24, type: 'A', class: 'bg-sari' },
-            { code: 'KG-24', label: 'K.Göz 24h', count: 3, hours: 24, type: 'A', class: 'bg-kadin' },
-            { code: 'EG-24', label: 'E.Göz 24h', count: 3, hours: 24, type: 'A', class: 'bg-erkek' },
-            { code: 'T-24', label: 'Triaj 24h', count: 2, hours: 24, type: 'A', class: 'bg-triaj' },
-            { code: 'Y-24', label: 'Yeşil 24h', count: 2, hours: 24, type: 'A', class: 'bg-yesil' },
-            { code: 'T-16', label: 'Triaj 16h', count: 1, hours: 16, type: 'Any', class: 'bg-triaj' },
-            { code: 'Y-16', label: 'Yeşil 16h', count: 1, hours: 16, type: 'Any', class: 'bg-yesil' },
-            { code: 'T-08', label: 'Triaj 8h', count: 1, hours: 8, type: 'Any', class: 'bg-triaj' },
-            { code: 'Y-08', label: 'Yeşil 8h', count: 1, hours: 8, type: 'Any', class: 'bg-yesil' }
+            { code: 'S-24', label: 'Sarı 24h', count: 4, hours: 24, class: 'bg-sari' },
+            { code: 'KG-24', label: 'K.Göz 24h', count: 3, hours: 24, class: 'bg-kadin' },
+            { code: 'EG-24', label: 'E.Göz 24h', count: 3, hours: 24, class: 'bg-erkek' },
+            { code: 'T-24', label: 'Triaj 24h', count: 2, hours: 24, class: 'bg-triaj' },
+            { code: 'Y-24', label: 'Yeşil 24h', count: 2, hours: 24, class: 'bg-yesil' }
         ];
 
         const MONTH_NAMES = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -143,9 +133,6 @@
                 }
             };
 
-            const groupColor = person.group === 'A' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700';
-            const groupLabel = person.group === 'A' ? '24h' : '8/16h';
-
             if (isEditing) {
                 return (
                     <div className="flex items-center space-x-1 bg-white p-1 rounded shadow border z-10 h-10">
@@ -161,7 +148,7 @@
 
             return (
                 <div className="flex items-center space-x-2 bg-white border border-gray-200 p-1.5 rounded hover:shadow-md transition group h-10 cursor-pointer" onClick={() => setIsEditing(true)}>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${groupColor}`}>{groupLabel}</span>
+                    <div className="w-6 h-6 bg-teal-50 text-teal-700 rounded-full flex items-center justify-center text-[10px] font-bold">24</div>
                     <span className="text-xs font-bold text-gray-700 truncate select-none flex-1">{person.name}</span>
                     <button onClick={(e) => { e.stopPropagation(); onDelete(person.name); }} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100"><i className="fas fa-trash text-[10px]"></i></button>
                 </div>
@@ -169,11 +156,8 @@
         };
 
         function App() {
-            // Başlangıçta personelleri birleştir
-            const initialStaff = [
-                ...GROUP_A_NAMES.map(n => ({ name: n, group: 'A' })),
-                ...GROUP_B_NAMES.map(n => ({ name: n, group: 'B' }))
-            ].sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+            // Başlangıçta personelleri yükle
+            const initialStaff = STAFF_NAMES.map(n => ({ name: n })).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
 
             const [staff, setStaff] = useState(initialStaff);
             const [inputYear, setInputYear] = useState(2026);
@@ -243,13 +227,7 @@
                         const val = currentSchedule[key];
                         if (val && val !== 'X' && val !== 'İ') {
                             shiftCount++;
-                            // Kodu parçala (örn: "S-24")
-                            const parts = val.split('-');
-                            if (parts.length === 2 && !isNaN(parts[1])) {
-                                totalHours += parseInt(parts[1]);
-                            } else if (val === '24') { // Manuel giriş
-                                totalHours += 24;
-                            }
+                            totalHours += 24;
                         }
                     }
                     newStats[p.name] = { shiftCount, totalHours };
@@ -274,77 +252,38 @@
                 let staffState = {};
                 staff.forEach(p => {
                     staffState[p.name] = { 
-                        totalHours: 0, 
-                        lastShiftDay: -10, 
-                        group: p.group 
+                        shiftCount: 0, 
+                        lastShiftDay: -10 
                     };
                 });
 
                 for (let day = 1; day <= targetDays; day++) {
                     const assignedToday = []; // Bugün nöbet yazılanlar
 
-                    // 1. ADIM: Kısa Nöbetler (8h ve 16h) - Grup B Önceliği
-                    const shortShifts = SHIFT_ROLES.filter(r => r.hours < 24);
-                    
-                    for (let role of shortShifts) {
-                        for (let i = 0; i < role.count; i++) {
-                            // Uygun adayları bul
-                            let candidates = staff.filter(p => {
-                                if (assignedToday.includes(p.name)) return false;
-                                if (newSchedule[`${p.name}_${day}`] === 'X' || newSchedule[`${p.name}_${day}`] === 'İ') return false;
-                                if (staffState[p.name].lastShiftDay === day - 1) return false; // Dün nöbet tuttuysa yazma
-                                return true;
-                            });
-
-                            // Öncelikle Grup B'yi bu nöbetlere yönlendir
-                            let priorityCandidates = candidates.filter(p => p.group === 'B');
-                            
-                            // Eğer Grup B'den kimse yoksa veya yetmezse Grup A'ya bak
-                            if (priorityCandidates.length === 0) {
-                                priorityCandidates = candidates.filter(p => p.group === 'A');
-                            }
-
-                            if (priorityCandidates.length > 0) {
-                                // En az saati olana öncelik ver
-                                priorityCandidates = shuffleArray(priorityCandidates);
-                                priorityCandidates.sort((a, b) => staffState[a.name].totalHours - staffState[b.name].totalHours);
-                                
-                                const selected = priorityCandidates[0];
-                                newSchedule[`${selected.name}_${day}`] = role.code;
-                                assignedToday.push(selected.name);
-                                staffState[selected.name].totalHours += role.hours;
-                                staffState[selected.name].lastShiftDay = day;
-                            }
-                        }
-                    }
-
-                    // 2. ADIM: Uzun Nöbetler (24h) - Sadece Grup A
-                    const longShifts = SHIFT_ROLES.filter(r => r.hours === 24);
-                    
                     // Görev sırasını karıştır ki hep aynı kişiler Sarı Alana gitmesin
-                    const randomizedLongShifts = [];
-                    longShifts.forEach(role => {
-                        for(let i=0; i<role.count; i++) randomizedLongShifts.push(role);
+                    const dailyRoles = [];
+                    SHIFT_ROLES.forEach(role => {
+                        for(let i=0; i<role.count; i++) dailyRoles.push(role);
                     });
-                    shuffleArray(randomizedLongShifts);
+                    shuffleArray(dailyRoles);
 
-                    for (let role of randomizedLongShifts) {
+                    for (let role of dailyRoles) {
                          let candidates = staff.filter(p => {
-                            if (p.group !== 'A') return false; // Sadece Grup A
                             if (assignedToday.includes(p.name)) return false;
                             if (newSchedule[`${p.name}_${day}`] === 'X' || newSchedule[`${p.name}_${day}`] === 'İ') return false;
-                            if (staffState[p.name].lastShiftDay >= day - 1) return false; // Dün nöbet tuttuysa yazma
+                            if (staffState[p.name].lastShiftDay >= day - 1) return false; // Dün nöbet tuttuysa yazma (24h kuralı)
                             return true;
                         });
 
                         if (candidates.length > 0) {
                             candidates = shuffleArray(candidates);
-                            candidates.sort((a, b) => staffState[a.name].totalHours - staffState[b.name].totalHours);
+                            // En az nöbeti olana öncelik ver
+                            candidates.sort((a, b) => staffState[a.name].shiftCount - staffState[b.name].shiftCount);
                             
                             const selected = candidates[0];
                             newSchedule[`${selected.name}_${day}`] = role.code;
                             assignedToday.push(selected.name);
-                            staffState[selected.name].totalHours += role.hours;
+                            staffState[selected.name].shiftCount++;
                             staffState[selected.name].lastShiftDay = day;
                         }
                     }
@@ -370,14 +309,13 @@
                     
                     // Geçici klon oluştur
                     const clone = originalTable.cloneNode(true);
-                    const targetWidth = 2000; // Daha geniş tablo için
+                    const targetWidth = 2000; 
                     clone.style.position = 'fixed'; 
                     clone.style.top = '-10000px'; 
                     clone.style.width = `${targetWidth}px`; 
                     clone.style.backgroundColor = 'white';
                     clone.style.padding = '20px';
                     
-                    // Input değerlerini div'e çevir (html2canvas inputları bazen atlar)
                     const originalInputs = originalTable.querySelectorAll('input');
                     const clonedInputs = clone.querySelectorAll('input');
                     originalInputs.forEach((origInput, index) => {
@@ -418,7 +356,7 @@
             };
 
             const addStaff = () => {
-                setStaff([...staff, { name: "YENİ PERSONEL", group: 'A' }]);
+                setStaff([...staff, { name: "YENİ PERSONEL" }]);
             };
             
             const removeStaff = (name) => {
@@ -456,10 +394,7 @@
                     <div className="border-t pt-4">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="font-bold text-gray-700">Personel Listesi ({staff.length})</h3>
-                            <div className="text-xs space-x-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold">Grup A: Tüm Nöbetler</span>
-                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-bold">Grup B: Sadece 8/16s</span>
-                            </div>
+                            <span className="px-2 py-1 bg-teal-50 text-teal-800 rounded font-bold text-xs">Toplam 54 Kişi</span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pr-1 custom-scroll max-h-[400px] overflow-y-auto">
                             {staff.map((p, i) => (
@@ -555,7 +490,6 @@
                                                 </th>
                                             ))}
                                             <th className="th-cell w-10 bg-gray-200 text-black">Nöb.</th>
-                                            <th className="th-cell w-10 bg-gray-200 text-black">Saat</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -583,7 +517,6 @@
                                                     );
                                                 })}
                                                 <td className="td-cell text-center bg-gray-100 border-gray-400 font-bold">{stats[p.name]?.shiftCount || 0}</td>
-                                                <td className="td-cell text-center bg-gray-100 border-gray-400 font-bold">{stats[p.name]?.totalHours || 0}</td>
                                             </tr>
                                         ))}
                                         {/* Günlük Toplam Kontrolü */}
@@ -595,22 +528,22 @@
                                                     const v = schedule[`${p.name}_${d}`];
                                                     if (v && v !== 'X' && v !== 'İ') count++; 
                                                 });
-                                                const expected = 18; // 14 (24h) + 4 (Short)
+                                                const expected = 14; 
                                                 const color = count === expected ? 'text-green-400' : 'text-red-400';
                                                 return <td key={d} className={`text-center text-[10px] border border-gray-600 ${color}`}>{count}</td>;
                                             })}
-                                            <td colSpan="2"></td>
+                                            <td colSpan="1"></td>
                                         </tr>
                                     </tbody>
                                 </table>
 
                                 {/* Renk Lejandı */}
                                 <div className="mt-4 flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase">
-                                    <div className="flex items-center border p-1 rounded bg-sari w-24 justify-center">SARI (24h)</div>
-                                    <div className="flex items-center border p-1 rounded bg-kadin w-24 justify-center">K.GÖZ (24h)</div>
-                                    <div className="flex items-center border p-1 rounded bg-erkek w-24 justify-center">E.GÖZ (24h)</div>
-                                    <div className="flex items-center border p-1 rounded bg-triaj w-24 justify-center">TRİAJ</div>
-                                    <div className="flex items-center border p-1 rounded bg-yesil w-24 justify-center">YEŞİL</div>
+                                    <div className="flex items-center border p-1 rounded bg-sari w-24 justify-center">SARI (4)</div>
+                                    <div className="flex items-center border p-1 rounded bg-kadin w-24 justify-center">K.GÖZ (3)</div>
+                                    <div className="flex items-center border p-1 rounded bg-erkek w-24 justify-center">E.GÖZ (3)</div>
+                                    <div className="flex items-center border p-1 rounded bg-triaj w-24 justify-center">TRİAJ (2)</div>
+                                    <div className="flex items-center border p-1 rounded bg-yesil w-24 justify-center">YEŞİL (2)</div>
                                     <div className="flex items-center border p-1 rounded bg-izin w-24 justify-center">İZİNLİ</div>
                                 </div>
                             </div>
