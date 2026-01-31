@@ -27,7 +27,7 @@
         
         .cell-input { 
             width: 100%; height: 100%; text-align: center; background: transparent; 
-            outline: none; font-size: 10px; font-weight: 700; white-space: pre-wrap; line-height: 1.1;
+            outline: none; font-size: 10px; font-weight: 700; white-space: pre-wrap; line-height: 1.1; cursor: pointer;
         }
         
         /* Yazıcı Dostu Konteyner */
@@ -71,20 +71,36 @@
         .weekend-bg { background-color: #ffedd5; } 
 
         /* Alan Renkleri */
-        .bg-sari { background-color: #fef08a; color: #854d0e; } /* Sarı Alan */
-        .bg-yesil { background-color: #bbf7d0; color: #14532d; } /* Yeşil Alan */
-        .bg-triaj { background-color: #fecaca; color: #991b1b; } /* Triaj */
-        .bg-kadin { background-color: #e9d5ff; color: #6b21a8; } /* Kadın Gözlem */
-        .bg-erkek { background-color: #bfdbfe; color: #1e40af; } /* Erkek Gözlem */
+        .bg-sari, .bg-sa { background-color: #fef08a; color: #854d0e; } /* Sarı Alan */
+        .bg-yesil, .bg-ya { background-color: #bbf7d0; color: #14532d; } /* Yeşil Alan */
+        .bg-triaj, .bg-t { background-color: #fecaca; color: #991b1b; } /* Triaj */
+        .bg-kadin, .bg-kg { background-color: #e9d5ff; color: #6b21a8; } /* Kadın Gözlem */
+        .bg-erkek, .bg-eg { background-color: #bfdbfe; color: #1e40af; } /* Erkek Gözlem */
         .bg-izin { background-color: #f3f4f6; color: #ef4444; } /* İzin */
         .bg-bos { background-color: white; }
+        .bg-disabled { background-color: #e5e7eb; color: #9ca3af; } /* Devre dışı personel */
+        
+        /* Popover */
+        .popover-container {
+            position: fixed;
+            z-index: 100;
+            background: white;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 Kolonlu yapı: 24, 16, 8 */
+            gap: 0.25rem;
+            width: 360px;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
         // --- Sabitler ve Veriler ---
         
@@ -103,13 +119,42 @@
             "YASEMİN ERDEM", "YASİN KİRAZ", "YUNUS EMRE YILDIZ", "ZEHRA TEKBIÇAK"
         ];
 
-        // Nöbet Tipleri (Sadece 24 Saatlikler - Toplam 14 Kişi)
+        // Otomatik Dağıtım Rolleri
         const SHIFT_ROLES = [
             { code: 'S-24', label: 'Sarı 24h', count: 4, hours: 24, class: 'bg-sari' },
-            { code: 'KG-24', label: 'K.Göz 24h', count: 3, hours: 24, class: 'bg-kadin' },
-            { code: 'EG-24', label: 'E.Göz 24h', count: 3, hours: 24, class: 'bg-erkek' },
+            { code: 'K-24', label: 'K.Göz 24h', count: 3, hours: 24, class: 'bg-kadin' },
+            { code: 'E-24', label: 'E.Göz 24h', count: 3, hours: 24, class: 'bg-erkek' },
             { code: 'T-24', label: 'Triaj 24h', count: 2, hours: 24, class: 'bg-triaj' },
             { code: 'Y-24', label: 'Yeşil 24h', count: 2, hours: 24, class: 'bg-yesil' }
+        ];
+
+        // Manuel Seçenekler (Genişletilmiş)
+        const MANUAL_OPTIONS = [
+            // Sarı
+            { label: 'S-24', code: 'S-24', class: 'bg-sari', hours: 24 },
+            { label: 'S-16', code: 'S-16', class: 'bg-sari opacity-80', hours: 16 },
+            { label: 'S-8', code: 'S-8', class: 'bg-sari opacity-60', hours: 8 },
+            // Kadın Gözlem
+            { label: 'K-24', code: 'K-24', class: 'bg-kadin', hours: 24 },
+            { label: 'K-16', code: 'K-16', class: 'bg-kadin opacity-80', hours: 16 },
+            { label: 'K-8', code: 'K-8', class: 'bg-kadin opacity-60', hours: 8 },
+            // Erkek Gözlem
+            { label: 'E-24', code: 'E-24', class: 'bg-erkek', hours: 24 },
+            { label: 'E-16', code: 'E-16', class: 'bg-erkek opacity-80', hours: 16 },
+            { label: 'E-8', code: 'E-8', class: 'bg-erkek opacity-60', hours: 8 },
+            // Triaj
+            { label: 'T-24', code: 'T-24', class: 'bg-triaj', hours: 24 },
+            { label: 'T-16', code: 'T-16', class: 'bg-triaj opacity-80', hours: 16 },
+            { label: 'T-8', code: 'T-8', class: 'bg-triaj opacity-60', hours: 8 },
+            // Yeşil
+            { label: 'Y-24', code: 'Y-24', class: 'bg-yesil', hours: 24 },
+            { label: 'Y-16', code: 'Y-16', class: 'bg-yesil opacity-80', hours: 16 },
+            { label: 'Y-8', code: 'Y-8', class: 'bg-yesil opacity-60', hours: 8 },
+            
+            // Diğer
+            { label: '24', code: '24', class: 'bg-white border border-gray-400', hours: 24 },
+            { label: 'İ', code: 'İ', class: 'bg-red-100 text-red-600 font-bold', hours: 0 },
+            { label: 'X', code: 'X', class: 'bg-gray-100 text-gray-400', hours: 0 },
         ];
 
         const MONTH_NAMES = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -148,18 +193,62 @@
 
             return (
                 <div className="flex items-center space-x-2 bg-white border border-gray-200 p-1.5 rounded hover:shadow-md transition group h-10 cursor-pointer" onClick={() => setIsEditing(true)}>
-                    <div className="w-6 h-6 bg-teal-50 text-teal-700 rounded-full flex items-center justify-center text-[10px] font-bold">24</div>
+                    <div className="w-6 h-6 bg-teal-50 text-teal-700 rounded-full flex items-center justify-center text-[10px] font-bold"><i className="fas fa-user"></i></div>
                     <span className="text-xs font-bold text-gray-700 truncate select-none flex-1">{person.name}</span>
                     <button onClick={(e) => { e.stopPropagation(); onDelete(person.name); }} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100"><i className="fas fa-trash text-[10px]"></i></button>
                 </div>
             );
         };
 
+        const CellPopover = ({ position, onClose, onSelect }) => {
+            const ref = useRef(null);
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (ref.current && !ref.current.contains(event.target)) {
+                        onClose();
+                    }
+                };
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, [onClose]);
+
+            const style = {
+                top: position.y + 10,
+                left: Math.min(position.x - 180, window.innerWidth - 380),
+            };
+
+            return (
+                <div ref={ref} className="popover-container animate-fade-in" style={style}>
+                    <div className="col-span-3 text-center text-xs font-bold text-gray-500 mb-1 border-b pb-1">Nöbet Türü Seçin</div>
+                    
+                    {/* Headers for columns */}
+                    <div className="text-[9px] font-bold text-gray-400 text-center">24 Saat</div>
+                    <div className="text-[9px] font-bold text-gray-400 text-center">16 Saat</div>
+                    <div className="text-[9px] font-bold text-gray-400 text-center">8 Saat</div>
+
+                    {MANUAL_OPTIONS.map(opt => (
+                        <button 
+                            key={opt.code} 
+                            onClick={() => onSelect(opt.code)}
+                            className={`${opt.class} p-2 rounded text-[10px] font-bold hover:opacity-80 border border-gray-200 shadow-sm transition-transform active:scale-95`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                    <button onClick={() => onSelect('')} className="col-span-3 bg-red-50 text-red-600 p-2 rounded text-[10px] font-bold hover:bg-red-100 mt-1 border border-red-100">
+                        <i className="fas fa-trash mr-1"></i> Temizle
+                    </button>
+                </div>
+            );
+        };
+
+
         function App() {
-            // Başlangıçta personelleri yükle
             const initialStaff = STAFF_NAMES.map(n => ({ name: n })).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
 
             const [staff, setStaff] = useState(initialStaff);
+            const [disabledStaff, setDisabledStaff] = useState([]); 
             const [inputYear, setInputYear] = useState(2026);
             const [inputMonth, setInputMonth] = useState(1);
             const [loadedDate, setLoadedDate] = useState(null); 
@@ -169,12 +258,34 @@
             const [stats, setStats] = useState({});
             const [activeTab, setActiveTab] = useState('settings'); 
             const [showClearConfirm, setShowClearConfirm] = useState(false); 
+            const [savedProjects, setSavedProjects] = useState([]);
+            const [projectToDelete, setProjectToDelete] = useState(null);
+            
+            // Popover State
+            const [popover, setPopover] = useState(null); // { x, y, person, day }
+
             const tableRef = useRef(null);
+            const fileInputRef = useRef(null);
 
             useEffect(() => {
                 const days = new Date(inputYear, inputMonth + 1, 0).getDate();
                 setDaysInMonth(days);
             }, [inputYear, inputMonth]);
+
+            // Kayıtlı verileri yükle
+            useEffect(() => {
+                const localData = localStorage.getItem('eriskin_nobet_projects');
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        parsed.sort((a, b) => {
+                            if (b.year !== a.year) return b.year - a.year;
+                            return b.month - a.month;
+                        });
+                        setSavedProjects(parsed);
+                    } catch (e) { console.error(e); }
+                }
+            }, []);
 
             useEffect(() => {
                 calculateStats(schedule);
@@ -199,8 +310,9 @@
                 return Array.from({ length: days }, (_, i) => i + 1);
             };
 
-            // Constraint İşlemleri
             const toggleConstraint = (personName, day) => {
+                if (disabledStaff.includes(personName)) return;
+
                 const key = `${personName}_${day}`;
                 const current = constraints[key];
                 const newConstraints = { ...constraints };
@@ -211,9 +323,16 @@
                 setConstraints(newConstraints);
             };
 
+            const toggleDisabled = (personName) => {
+                setDisabledStaff(prev => {
+                    if (prev.includes(personName)) return prev.filter(n => n !== personName);
+                    return [...prev, personName];
+                });
+            };
+
             const clearConstraints = () => { setConstraints({}); setShowClearConfirm(false); };
 
-            // İstatistik Hesaplama
+            // --- İstatistik Hesaplama (Gelişmiş) ---
             const calculateStats = (currentSchedule) => {
                 const currentDays = loadedDate ? new Date(loadedDate.year, loadedDate.month + 1, 0).getDate() : daysInMonth;
                 const newStats = {};
@@ -227,7 +346,22 @@
                         const val = currentSchedule[key];
                         if (val && val !== 'X' && val !== 'İ') {
                             shiftCount++;
-                            totalHours += 24;
+                            
+                            // Yeni Koda Göre Saat Çıkarımı
+                            // Örn: S-24 -> 24, T-8 -> 8, 24 -> 24
+                            if (val) {
+                                const parts = val.split('-');
+                                if (parts.length === 2 && !isNaN(parts[1])) {
+                                    totalHours += parseInt(parts[1]);
+                                } else if (!isNaN(val)) {
+                                    totalHours += parseInt(val);
+                                } else {
+                                    // Fallback: Listedeki objeden bul
+                                    const opt = MANUAL_OPTIONS.find(o => o.code === val);
+                                    if (opt) totalHours += opt.hours;
+                                    else totalHours += 24; // Bilinmeyen kod 24 varsay
+                                }
+                            }
                         }
                     }
                     newStats[p.name] = { shiftCount, totalHours };
@@ -243,54 +377,213 @@
                 return array;
             };
 
-            // --- Ana Algoritma: Nöbet Dağıtımı ---
-            const generateSchedule = () => {
-                const targetDays = daysInMonth;
-                const newSchedule = { ...constraints }; // Mevcut kısıtları koru
+            // --- Kayıt / Yükleme Fonksiyonları ---
+
+            const saveToLocal = (data) => {
+                const id = `${data.year}-${data.month}`; 
+                const newProject = { 
+                    ...data, 
+                    id, 
+                    timestamp: new Date().toISOString()
+                };
                 
-                // Personel durum takibi
+                setSavedProjects(prev => {
+                    const others = prev.filter(p => p.id !== id);
+                    const newList = [newProject, ...others].sort((a, b) => {
+                        if (b.year !== a.year) return b.year - a.year;
+                        return b.month - a.month;
+                    });
+                    localStorage.setItem('eriskin_nobet_projects', JSON.stringify(newList));
+                    return newList;
+                });
+            };
+
+            const loadFromSaved = (project) => {
+                if(project.staff) setStaff(project.staff.sort((a, b) => a.name.localeCompare(b.name, 'tr')));
+                if(project.constraints) setConstraints(project.constraints);
+                if(project.schedule) setSchedule(project.schedule);
+                if(project.disabledStaff) setDisabledStaff(project.disabledStaff);
+                
+                setLoadedDate({ month: project.month, year: project.year });
+                setInputMonth(project.month);
+                setInputYear(project.year);
+                setDaysInMonth(project.daysInMonth || new Date(project.year, project.month + 1, 0).getDate());
+                
+                setActiveTab('result'); // Doğrudan sonuca git
+            };
+
+             const deleteSavedProject = (e, id) => {
+                e.stopPropagation();
+                const newList = savedProjects.filter(p => p.id !== id);
+                setSavedProjects(newList);
+                localStorage.setItem('eriskin_nobet_projects', JSON.stringify(newList));
+                setProjectToDelete(null);
+            };
+
+            const saveProjectToFile = () => {
+                const saveYear = loadedDate ? loadedDate.year : inputYear;
+                const saveMonth = loadedDate ? loadedDate.month : inputMonth;
+                const saveDays = loadedDate ? new Date(saveYear, saveMonth + 1, 0).getDate() : daysInMonth;
+                
+                const projectData = { 
+                    version: "2.0", 
+                    date: new Date().toISOString(), 
+                    staff, 
+                    year: saveYear, 
+                    month: saveMonth, 
+                    daysInMonth: saveDays, 
+                    constraints, 
+                    schedule,
+                    disabledStaff
+                };
+                
+                // Local'e de kaydet
+                saveToLocal(projectData);
+
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+                const fileName = `Eriskin_Acil_${dateStr}.json`;
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", fileName);
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            };
+
+            const loadProjectFromFile = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.staff) setStaff(data.staff);
+                        if (data.year && data.month !== undefined) {
+                            setLoadedDate({ month: data.month, year: data.year });
+                            setInputMonth(data.month);
+                            setInputYear(data.year);
+                        }
+                        if (data.constraints) setConstraints(data.constraints);
+                        if (data.schedule) setSchedule(data.schedule);
+                        if (data.disabledStaff) setDisabledStaff(data.disabledStaff);
+                        
+                        saveToLocal(data); // Yükleyince otomatik locale de kaydet
+                        setActiveTab('result');
+                        alert("Proje başarıyla yüklendi!");
+                    } catch (error) { console.error(error); alert("Dosya formatı hatalı."); }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            };
+
+            // --- Ana Algoritma: Nöbet Dağıtımı ---
+            const generateSchedule = (isManual = false) => {
+                const targetDays = daysInMonth;
+                const newSchedule = { ...constraints }; 
+                
+                const bufferConstraints = {}; 
+                staff.forEach(p => {
+                    if (disabledStaff.includes(p.name)) return;
+                    for (let d = 1; d <= targetDays; d++) {
+                        if (constraints[`${p.name}_${d}`] === 'İ') {
+                            if (d === 1 || constraints[`${p.name}_${d-1}`] !== 'İ') {
+                                for (let buffer = 1; buffer <= 3; buffer++) {
+                                    const bufferDay = d - buffer;
+                                    if (bufferDay >= 1 && !constraints[`${p.name}_${bufferDay}`]) {
+                                        bufferConstraints[`${p.name}_${bufferDay}`] = 'BUFFER'; 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
                 let staffState = {};
                 staff.forEach(p => {
+                    let unavailableCount = 0;
+                    for(let d=1; d<=targetDays; d++) {
+                        const key = `${p.name}_${d}`;
+                        const constraintVal = constraints[key];
+                        if (constraintVal === 'İ' || constraintVal === 'X') unavailableCount++;
+                        else if (bufferConstraints[key] === 'BUFFER') unavailableCount++;
+                    }
+                    
                     staffState[p.name] = { 
                         shiftCount: 0, 
-                        lastShiftDay: -10 
+                        availableDays: Math.max(1, targetDays - unavailableCount),
+                        lastShiftDay: -10,
+                        lastRoleCode: null,
+                        roleCounts: {} 
                     };
+                    SHIFT_ROLES.forEach(r => staffState[p.name].roleCounts[r.code] = 0);
                 });
 
                 for (let day = 1; day <= targetDays; day++) {
-                    const assignedToday = []; // Bugün nöbet yazılanlar
+                    const assignedToday = []; 
 
-                    // Görev sırasını karıştır ki hep aynı kişiler Sarı Alana gitmesin
-                    const dailyRoles = [];
-                    SHIFT_ROLES.forEach(role => {
-                        for(let i=0; i<role.count; i++) dailyRoles.push(role);
-                    });
+                    let dailyRoles = [];
+                    if (isManual) {
+                        for(let i=0; i<14; i++) dailyRoles.push({ code: '24', hours: 24 });
+                    } else {
+                        SHIFT_ROLES.forEach(role => {
+                            for(let i=0; i<role.count; i++) dailyRoles.push(role);
+                        });
+                    }
+                    
                     shuffleArray(dailyRoles);
 
                     for (let role of dailyRoles) {
                          let candidates = staff.filter(p => {
+                            if (disabledStaff.includes(p.name)) return false; 
                             if (assignedToday.includes(p.name)) return false;
-                            if (newSchedule[`${p.name}_${day}`] === 'X' || newSchedule[`${p.name}_${day}`] === 'İ') return false;
-                            if (staffState[p.name].lastShiftDay >= day - 1) return false; // Dün nöbet tuttuysa yazma (24h kuralı)
+                            
+                            const key = `${p.name}_${day}`;
+                            if (constraints[key] === 'X' || constraints[key] === 'İ') return false;
+                            if (bufferConstraints[key] === 'BUFFER') return false; 
+                            
+                            if (staffState[p.name].lastShiftDay >= day - 1) return false; 
+                            
+                            if (!isManual && staffState[p.name].lastRoleCode === role.code) return false;
+
                             return true;
                         });
 
                         if (candidates.length > 0) {
                             candidates = shuffleArray(candidates);
-                            // En az nöbeti olana öncelik ver
-                            candidates.sort((a, b) => staffState[a.name].shiftCount - staffState[b.name].shiftCount);
+                            
+                            candidates.sort((a, b) => {
+                                const stateA = staffState[a.name];
+                                const stateB = staffState[b.name];
+                                
+                                const ratioA = (stateA.shiftCount) / stateA.availableDays;
+                                const ratioB = (stateB.shiftCount) / stateB.availableDays;
+                                
+                                if (Math.abs(ratioA - ratioB) > 0.01) return ratioA - ratioB;
+                                
+                                if (!isManual) {
+                                    const roleCountA = stateA.roleCounts[role.code] || 0;
+                                    const roleCountB = stateB.roleCounts[role.code] || 0;
+                                    return roleCountA - roleCountB;
+                                }
+                                return 0;
+                            });
                             
                             const selected = candidates[0];
                             newSchedule[`${selected.name}_${day}`] = role.code;
                             assignedToday.push(selected.name);
+                            
                             staffState[selected.name].shiftCount++;
+                            if(!isManual) staffState[selected.name].roleCounts[role.code]++;
                             staffState[selected.name].lastShiftDay = day;
+                            staffState[selected.name].lastRoleCode = role.code;
                         }
                     }
                 }
 
-                // İzinleri (İ) schedule'a işle
                 staff.forEach(person => {
+                    if (disabledStaff.includes(person.name)) return;
                    for (let day = 1; day <= targetDays; day++) {
                        const key = `${person.name}_${day}`;
                        if (constraints[key] === 'İ') newSchedule[key] = 'İ';
@@ -299,6 +592,7 @@
 
                 setSchedule(newSchedule);
                 setLoadedDate({ month: inputMonth, year: inputYear });
+                saveToLocal({ year: inputYear, month: inputMonth, daysInMonth: targetDays, staff, constraints, schedule: newSchedule, disabledStaff });
                 setActiveTab('result');
             };
 
@@ -307,7 +601,6 @@
                     const originalTable = tableRef.current.querySelector('.print-container');
                     if (!originalTable) return;
                     
-                    // Geçici klon oluştur
                     const clone = originalTable.cloneNode(true);
                     const targetWidth = 2000; 
                     clone.style.position = 'fixed'; 
@@ -316,18 +609,18 @@
                     clone.style.backgroundColor = 'white';
                     clone.style.padding = '20px';
                     
-                    const originalInputs = originalTable.querySelectorAll('input');
-                    const clonedInputs = clone.querySelectorAll('input');
-                    originalInputs.forEach((origInput, index) => {
-                        const clonedInput = clonedInputs[index];
-                        if (clonedInput) {
-                            const div = document.createElement('div');
-                            div.innerText = origInput.value;
-                            div.className = origInput.className;
-                            div.style.display = 'flex'; 
-                            div.style.alignItems = 'center'; 
-                            div.style.justifyContent = 'center';
-                            if (clonedInput.parentNode) clonedInput.parentNode.replaceChild(div, clonedInput);
+                    const originalEls = originalTable.querySelectorAll('.cell-input');
+                    const clonedEls = clone.querySelectorAll('.cell-input');
+                    
+                    originalEls.forEach((orig, i) => {
+                        if(clonedEls[i]) {
+                             const div = document.createElement('div');
+                             div.innerText = orig.innerText || orig.value || ''; 
+                             div.className = orig.className;
+                             div.style.display = 'flex';
+                             div.style.alignItems = 'center';
+                             div.style.justifyContent = 'center';
+                             if(clonedEls[i].parentNode) clonedEls[i].parentNode.replaceChild(div, clonedEls[i]);
                         }
                     });
 
@@ -342,15 +635,20 @@
                 }
             };
 
-            const getCellClass = (val, isWeekend) => {
+            const getCellClass = (val, isWeekend, isDisabled) => {
+                if (isDisabled) return 'bg-disabled cursor-not-allowed';
                 if (!val) return isWeekend ? 'weekend-bg' : 'bg-bos';
                 if (val === 'İ') return 'bg-izin text-red-600 font-bold';
                 if (val === 'X') return 'bg-gray-100 text-gray-400 font-bold';
                 
+                // Manuel seçenekler
+                const manualOpt = MANUAL_OPTIONS.find(o => o.code === val);
+                if (manualOpt) return manualOpt.class;
+
+                // Otomatik roller
                 const role = SHIFT_ROLES.find(r => r.code === val);
                 if (role) return role.class;
                 
-                // Manuel girişler için fallback
                 if (val.includes('24')) return 'bg-white text-black font-bold border-2 border-gray-800';
                 return 'bg-blue-50';
             };
@@ -361,20 +659,94 @@
             
             const removeStaff = (name) => {
                 setStaff(staff.filter(s => s.name !== name));
+                setDisabledStaff(prev => prev.filter(n => n !== name)); 
             };
             
             const handleStaffUpdate = (oldName, newName) => {
                 const updated = staff.map(s => s.name === oldName ? { ...s, name: newName } : s);
                 updated.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
                 setStaff(updated);
+                
+                if (disabledStaff.includes(oldName)) {
+                    setDisabledStaff(prev => [...prev.filter(n => n !== oldName), newName]);
+                }
             };
 
-            // --- Arayüz Parçaları ---
-            
-            const SettingsPanel = () => (
+            const handleCellClick = (e, personName, day) => {
+                const rect = e.target.getBoundingClientRect();
+                setPopover({
+                    x: rect.left,
+                    y: rect.bottom,
+                    person: personName,
+                    day: day,
+                    currentVal: schedule[`${personName}_${day}`]
+                });
+            };
+
+            const handlePopoverSelect = (val) => {
+                if (popover) {
+                    const key = `${popover.person}_${popover.day}`;
+                    const newSched = { ...schedule, [key]: val };
+                    if (!val) delete newSched[key];
+                    setSchedule(newSched);
+                    calculateStats(newSched);
+                    setPopover(null);
+                }
+            };
+
+            // --- Render ---
+
+            const renderSettingsPanel = () => (
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-6 animate-fade-in">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Nöbet Ayarları</h2>
-                    
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center"><i className="fas fa-home mr-2 text-teal-600"></i> Ana Menü</h2>
+                            <p className="text-sm text-gray-500 mt-1">Nöbet programı oluşturun veya kayıtlı verileri yönetin.</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            <input type="file" accept=".json" ref={fileInputRef} style={{display:'none'}} onChange={loadProjectFromFile} />
+                            <button onClick={() => fileInputRef.current.click()} className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 shadow-md flex items-center transition transform hover:scale-105"><i className="fas fa-upload mr-2"></i> Dosya Yükle</button>
+                            {schedule && Object.keys(schedule).length > 0 && (
+                                <button onClick={saveProjectToFile} className="bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 shadow-md flex items-center transition transform hover:scale-105"><i className="fas fa-save mr-2"></i> Kaydet (Dosya)</button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Kayıtlı Projeler Listesi */}
+                    {savedProjects.length > 0 && (
+                        <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-inner animate-fade-in">
+                            <h3 className="font-bold text-gray-700 mb-4 flex items-center"><i className="fas fa-folder-open mr-2 text-yellow-500"></i> Kayıtlı Dönemler (Tarayıcı Hafızası)</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {savedProjects.map((proj) => (
+                                    <div key={proj.id} className="relative group">
+                                        <button onClick={() => loadFromSaved(proj)} className="w-full bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-lg hover:border-teal-400 transition text-left duration-200">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="font-bold text-lg text-gray-800">{MONTH_NAMES[proj.month]} {proj.year}</span>
+                                                <i className="fas fa-chevron-right text-gray-400 group-hover:text-teal-500"></i>
+                                            </div>
+                                            <div className="text-xs text-gray-500 font-medium">
+                                                <span className="inline-block bg-teal-100 text-teal-800 px-2 py-0.5 rounded mr-2">{new Date(proj.timestamp).toLocaleDateString("tr-TR")}</span>
+                                                {proj.staff ? proj.staff.length : 0} Personel
+                                            </div>
+                                        </button>
+                                        {projectToDelete !== proj.id && (
+                                            <button onClick={(e) => {e.stopPropagation(); setProjectToDelete(proj.id)}} className="absolute top-3 right-3 bg-red-50 text-red-400 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-red-500 hover:text-white shadow-sm"><i className="fas fa-trash-alt text-xs"></i></button>
+                                        )}
+                                        {projectToDelete === proj.id && (
+                                            <div className="absolute top-2 right-2 bg-white border border-gray-200 p-3 shadow-xl rounded-lg z-20 flex flex-col items-end animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                                                <p className="text-xs text-gray-700 font-bold mb-2 whitespace-nowrap">Silinsin mi?</p>
+                                                <div className="flex gap-2">
+                                                    <button onClick={(e) => {e.stopPropagation(); setProjectToDelete(null)}} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200">İptal</button>
+                                                    <button onClick={(e) => deleteSavedProject(e, proj.id)} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Evet</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">Yıl</label>
@@ -390,8 +762,7 @@
                             </button>
                         </div>
                     </div>
-
-                    <div className="border-t pt-4">
+                     <div className="border-t pt-4">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="font-bold text-gray-700">Personel Listesi ({staff.length})</h3>
                             <span className="px-2 py-1 bg-teal-50 text-teal-800 rounded font-bold text-xs">Toplam 54 Kişi</span>
@@ -406,22 +777,25 @@
                 </div>
             );
 
-            const ConstraintGrid = () => (
+            const renderConstraintGrid = () => (
                 <div className="bg-white p-4 rounded-xl shadow-lg animate-fade-in border border-gray-100">
                     <div className="flex justify-between items-center mb-4">
                         <button onClick={() => setActiveTab('settings')} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"><i className="fas fa-arrow-left mr-2"></i> Geri</button>
-                        <h2 className="text-lg font-bold">Kısıtlamaları Giriniz (İzin / İstek)</h2>
+                        <div>
+                            <h2 className="text-lg font-bold">Kısıtlamalar & İzinler</h2>
+                            <p className="text-xs text-gray-500">İsmin yanındaki butona basarak o ay çalışmayacak kişiyi kapatabilirsiniz.</p>
+                        </div>
                         <div className="flex gap-2">
                              <button onClick={() => setShowClearConfirm(true)} className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">Temizle</button>
                              {showClearConfirm && <button onClick={clearConstraints} className="bg-red-600 text-white px-3 py-1 rounded text-sm font-bold">Onayla</button>}
                         </div>
                     </div>
-                    
+                    {/* ... Tablo Aynı ... */}
                     <div className="overflow-x-auto border rounded shadow-inner max-h-[600px] custom-scroll">
                         <table className="min-w-full text-xs border-collapse">
                             <thead>
                                 <tr className="bg-gray-800 text-white sticky top-0 z-20">
-                                    <th className="p-2 border border-gray-600 w-48 text-left pl-3">Personel</th>
+                                    <th className="p-2 border border-gray-600 w-48 text-left pl-3 z-30">Personel / Durum</th>
                                     {getDaysArray().map(d => (
                                         <th key={d} className={`p-1 border border-gray-600 w-8 ${isWeekend(inputYear, inputMonth, d) ? 'bg-orange-600' : ''}`}>
                                             <div className="flex flex-col"><span>{d}</span><span className="text-[8px] opacity-75">{getDayNameInitial(inputYear, inputMonth, d)}</span></div>
@@ -430,46 +804,68 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {staff.map((p, idx) => (
-                                    <tr key={p.name} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                        <td className="p-1 border border-gray-300 font-semibold sticky left-0 bg-inherit z-10 pl-2 truncate">{p.name}</td>
-                                        {getDaysArray().map(d => {
-                                            const val = constraints[`${p.name}_${d}`];
-                                            const isWe = isWeekend(inputYear, inputMonth, d);
-                                            return (
-                                                <td key={d} 
-                                                    onClick={() => toggleConstraint(p.name, d)}
-                                                    className={`border border-gray-300 cursor-pointer text-center select-none transition-colors ${getCellClass(val, isWe)} hover:opacity-80`}
+                                {staff.map((p, idx) => {
+                                    const isDisabled = disabledStaff.includes(p.name);
+                                    return (
+                                        <tr key={p.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} ${isDisabled ? 'opacity-50' : ''}`}>
+                                            <td className="p-1 border border-gray-300 font-semibold sticky left-0 bg-inherit z-10 pl-2 flex items-center h-10 border-r-2 border-r-gray-400">
+                                                <button 
+                                                    onClick={() => toggleDisabled(p.name)} 
+                                                    className={`mr-2 w-8 h-5 rounded-full relative transition-colors duration-200 focus:outline-none ${isDisabled ? 'bg-gray-300' : 'bg-green-500'}`}
                                                 >
-                                                    {val}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
+                                                    <div className={`w-3 h-3 bg-white rounded-full shadow-md transform transition-transform duration-200 absolute top-1 ${isDisabled ? 'left-1' : 'left-4'}`}></div>
+                                                </button>
+                                                <span className={`truncate ${isDisabled ? 'line-through text-gray-400' : ''}`}>{p.name}</span>
+                                            </td>
+                                            {getDaysArray().map(d => {
+                                                const val = constraints[`${p.name}_${d}`];
+                                                const isWe = isWeekend(inputYear, inputMonth, d);
+                                                return (
+                                                    <td key={d} 
+                                                        onClick={() => toggleConstraint(p.name, d)}
+                                                        className={`border border-gray-300 cursor-pointer text-center select-none transition-colors ${getCellClass(val, isWe, isDisabled)} hover:opacity-80`}
+                                                    >
+                                                        {isDisabled ? '' : val}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                    <div className="mt-4 flex justify-end">
-                        <button onClick={generateSchedule} className="bg-green-600 text-white py-3 px-8 rounded-lg font-bold text-lg hover:bg-green-700 shadow-lg transform hover:scale-105 transition">
-                            <i className="fas fa-magic mr-2"></i> LİSTEYİ OLUŞTUR
-                        </button>
+                    <div className="mt-4 flex flex-col md:flex-row justify-end items-center gap-4">
+                        <div className="text-xs text-gray-500 italic text-right">
+                           Otomatik dağıtım rolleri dağıtır.<br/>Manuel dağıtım sadece '24' yazar, görevleri siz seçersiniz.
+                        </div>
+                        <div className="flex gap-2">
+                             <button onClick={() => generateSchedule(true)} className="bg-orange-500 text-white py-3 px-6 rounded-lg font-bold text-sm hover:bg-orange-600 shadow-lg transform hover:scale-105 transition">
+                                <i className="fas fa-hand-paper mr-2"></i> Listeyi Oluştur (Manuel)
+                            </button>
+                            <button onClick={() => generateSchedule(false)} className="bg-green-600 text-white py-3 px-6 rounded-lg font-bold text-lg hover:bg-green-700 shadow-lg transform hover:scale-105 transition">
+                                <i className="fas fa-magic mr-2"></i> Listeyi Oluştur (Otomatik)
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
 
-            const ResultView = () => (
-                <div className="animate-fade-in">
+            const renderResultView = () => (
+                <div className="animate-fade-in relative">
                     <div className="bg-white p-4 rounded-xl shadow-lg mb-6 border border-gray-100">
                         <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
                             <div className="flex items-center gap-4">
                                 <button onClick={() => setActiveTab('settings')} className="bg-gray-600 text-white py-2 px-3 rounded hover:bg-gray-700 text-sm"><i className="fas fa-home"></i></button>
-                                <button onClick={() => setActiveTab('constraints')} className="bg-teal-600 text-white py-2 px-3 rounded hover:bg-teal-700 text-sm"><i className="fas fa-edit mr-1"></i> İzinler</button>
-                                <h2 className="text-xl font-bold text-gray-800">Nöbet Listesi</h2>
+                                
+                                <button onClick={() => setActiveTab('constraints')} className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 text-sm font-bold shadow flex items-center transform active:scale-95 transition-transform"><i className="fas fa-arrow-left mr-2"></i> Geri (İzinler)</button>
+                                
+                                <h2 className="text-xl font-bold text-gray-800 ml-2">Nöbet Listesi</h2>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={generateSchedule} className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm font-bold shadow"><i className="fas fa-sync-alt mr-1"></i> Tekrar Dağıt</button>
+                                <button onClick={() => generateSchedule(true)} className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600 text-sm font-bold shadow"><i className="fas fa-hand-paper mr-1"></i> Manuel Dağıt</button>
                                 <button onClick={downloadImage} className="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 text-sm font-bold shadow"><i className="fas fa-download mr-1"></i> JPG İndir</button>
+                                <button onClick={saveProjectToFile} className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 text-sm font-bold shadow"><i className="fas fa-save mr-1"></i> Kaydet</button>
                             </div>
                         </div>
 
@@ -490,10 +886,11 @@
                                                 </th>
                                             ))}
                                             <th className="th-cell w-10 bg-gray-200 text-black">Nöb.</th>
+                                            <th className="th-cell w-10 bg-gray-200 text-black">Saat</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {staff.map((p, idx) => (
+                                        {staff.filter(p => !disabledStaff.includes(p.name) || stats[p.name]?.shiftCount > 0).map((p, idx) => (
                                             <tr key={p.name} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                                                 <td className="td-cell pl-2 border-gray-400 text-gray-900 truncate" title={p.name}>{p.name}</td>
                                                 {getResultDaysArray().map(d => {
@@ -502,21 +899,18 @@
                                                     const isWe = isWeekend(loadedDate?.year || inputYear, loadedDate?.month || inputMonth, d);
                                                     
                                                     return (
-                                                        <td key={d} className={`td-cell border-gray-400 ${getCellClass(val, isWe)}`}>
-                                                            <input 
-                                                                className={`cell-input ${val && val.length > 3 ? 'text-[9px]' : 'text-xs'}`} 
-                                                                value={val} 
-                                                                onChange={(e) => {
-                                                                    const newVal = e.target.value.toUpperCase();
-                                                                    const newSched = {...schedule, [key]: newVal};
-                                                                    setSchedule(newSched);
-                                                                    calculateStats(newSched);
-                                                                }} 
-                                                            />
+                                                        <td key={d} className={`td-cell border-gray-400 ${getCellClass(val, isWe, false)}`}>
+                                                            <div 
+                                                                className="cell-input flex items-center justify-center h-full w-full"
+                                                                onClick={(e) => handleCellClick(e, p.name, d)}
+                                                            >
+                                                                {val}
+                                                            </div>
                                                         </td>
                                                     );
                                                 })}
                                                 <td className="td-cell text-center bg-gray-100 border-gray-400 font-bold">{stats[p.name]?.shiftCount || 0}</td>
+                                                <td className="td-cell text-center bg-gray-100 border-gray-400 font-bold">{stats[p.name]?.totalHours || 0}</td>
                                             </tr>
                                         ))}
                                         {/* Günlük Toplam Kontrolü */}
@@ -532,31 +926,39 @@
                                                 const color = count === expected ? 'text-green-400' : 'text-red-400';
                                                 return <td key={d} className={`text-center text-[10px] border border-gray-600 ${color}`}>{count}</td>;
                                             })}
-                                            <td colSpan="1"></td>
+                                            <td colSpan="2"></td>
                                         </tr>
                                     </tbody>
                                 </table>
 
                                 {/* Renk Lejandı */}
                                 <div className="mt-4 flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase">
-                                    <div className="flex items-center border p-1 rounded bg-sari w-24 justify-center">SARI (4)</div>
-                                    <div className="flex items-center border p-1 rounded bg-kadin w-24 justify-center">K.GÖZ (3)</div>
-                                    <div className="flex items-center border p-1 rounded bg-erkek w-24 justify-center">E.GÖZ (3)</div>
-                                    <div className="flex items-center border p-1 rounded bg-triaj w-24 justify-center">TRİAJ (2)</div>
-                                    <div className="flex items-center border p-1 rounded bg-yesil w-24 justify-center">YEŞİL (2)</div>
-                                    <div className="flex items-center border p-1 rounded bg-izin w-24 justify-center">İZİNLİ</div>
+                                    <div className="flex items-center border p-1 rounded bg-sari w-20 justify-center">SARI</div>
+                                    <div className="flex items-center border p-1 rounded bg-kadin w-20 justify-center">K.GÖZ</div>
+                                    <div className="flex items-center border p-1 rounded bg-erkek w-20 justify-center">E.GÖZ</div>
+                                    <div className="flex items-center border p-1 rounded bg-triaj w-20 justify-center">TRİAJ</div>
+                                    <div className="flex items-center border p-1 rounded bg-yesil w-20 justify-center">YEŞİL</div>
+                                    <div className="flex items-center border p-1 rounded bg-white border-gray-400 w-16 justify-center text-gray-500">8/16s</div>
+                                    <div className="flex items-center border p-1 rounded bg-izin w-20 justify-center">İZİNLİ</div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {popover && (
+                        <CellPopover 
+                            position={popover} 
+                            onClose={() => setPopover(null)} 
+                            onSelect={handlePopoverSelect} 
+                        />
+                    )}
                 </div>
             );
 
             return (
                 <div className="max-w-full mx-auto p-2 min-h-screen">
-                    {activeTab === 'settings' && <SettingsPanel />}
-                    {activeTab === 'constraints' && <ConstraintGrid />}
-                    {activeTab === 'result' && <ResultView />}
+                    {activeTab === 'settings' && renderSettingsPanel()}
+                    {activeTab === 'constraints' && renderConstraintGrid()}
+                    {activeTab === 'result' && renderResultView()}
                 </div>
             );
         }
